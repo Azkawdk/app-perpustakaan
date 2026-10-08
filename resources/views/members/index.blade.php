@@ -7,11 +7,6 @@
 
     <p><a href="{{ route('members.create') }}" class="btn">+ Tambah Anggota</a></p>
 
-    <form action="{{ route('members.index') }}" method="GET" style="margin-bottom: 16px;">
-        <input type="text" name="search" placeholder="Cari nama anggota..." value="{{ request('search') }}" style="padding: 6px; width: 260px;">
-        <button type="submit" class="btn">Cari</button>
-    </form>
-
     <table>
         <thead>
             <tr>
@@ -27,18 +22,18 @@
         <tbody>
             @forelse ($members as $member)
                 <tr>
-                    <td>{{ $member->id }}</td>
-                    <td>{{ $member->nama }}</td>
-                    <td>{{ $member->nim }}</td>
-                    <td>{{ $member->email }}</td>
-                    <td>{{ $member->nomor_telepon }}</td>
-                    <td>{{ $member->status }}</td>
+                    <td>{{ $member['id'] }}</td>
+                    <td>{{ $member['nama'] }}</td>
+                    <td>{{ $member['nim'] }}</td>
+                    <td>{{ $member['email'] }}</td>
+                    <td>{{ $member['nomor_telepon'] }}</td>
+                    <td>{{ ucfirst($member['status']) }}</td>
                     <td>
-                        <a href="{{ route('members.show', $member->id) }}">Detail</a>
+                        <a href="{{ route('members.show', $member['id']) }}">Detail</a>
                         |
-                        <a href="{{ route('members.edit', $member->id) }}">Edit</a>
+                        <a href="{{ route('members.edit', $member['id']) }}">Edit</a>
                         |
-                        <form class="inline" action="{{ route('members.destroy', $member->id) }}" method="POST">
+                        <form class="inline" action="{{ route('members.destroy', $member['id']) }}" method="POST">
                             @csrf
                             @method('DELETE')
                             <button type="submit">Hapus</button>
@@ -53,5 +48,5 @@
         </tbody>
     </table>
 
-    {{ $members->appends(request()->query())->links() }}
+    {{ $members->links() }}
 @endsection

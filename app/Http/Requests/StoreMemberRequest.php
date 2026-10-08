@@ -31,21 +31,15 @@ class StoreMemberRequest extends FormRequest
     {
         return [
             'nama.required' => 'Nama anggota wajib diisi.',
-            'nama.max' => 'Nama anggota maksimal 100 karakter.',
-
             'nim.required' => 'NIM wajib diisi.',
             'nim.unique' => 'NIM sudah terdaftar.',
-
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah terdaftar.',
-
             'nomor_telepon.required' => 'Nomor telepon wajib diisi.',
-
             'alamat.required' => 'Alamat wajib diisi.',
-
             'status.required' => 'Status wajib dipilih.',
-            'status.in' => 'Status harus aktif atau nonaktif.',
+            'status.in' => 'Status tidak valid.',
         ];
     }
 }

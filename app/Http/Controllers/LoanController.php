@@ -2,16 +2,100 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Loan;
+use App\Models\Member; // <-- Tambahkan ini
+use App\Models\Book;   // <-- Tambahkan ini
+use App\Models\User;   // <-- Tambahkan ini
 use Illuminate\Http\Request;
 
 class LoanController extends Controller
 {
-    public function index() { return 'LoanController@index'; }
-    public function create() { return 'LoanController@create'; }
-    public function store(Request $request) { return 'LoanController@store'; }
-    public function show(string $id) { return "LoanController@show, id: {$id}"; }
-    public function edit(string $id) { return "LoanController@edit, id: {$id}"; }
-    public function update(Request $request, string $id) { return "LoanController@update, id: {$id}"; }
-    public function destroy(string $id) { return "LoanController@destroy, id: {$id}"; }
-    public function kembalikan(string $id) { return "LoanController@kembalikan, id: {$id}"; }
+    public function index()
+    {
+        $loans = Loan::with(['member', 'user', 'loanItems.book'])->paginate(10);
+
+        return view('loans.index', compact('loans'));
+    }
+
+    public function create()
+    {
+        $members = Member::all();
+        $books = Book::all();
+        $users = User::all();
+
+        return view('loans.create', compact('members', 'books', 'users'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'member_id' => 'required|integer|exists:members,id',
+            'user_id' => 'required|integer|exists:users,id',
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'book_ids' => 'required|array|min:1',
+            'book_ids.*' => 'integer|exists:books,id',
+        ]);
+
+        $loan = Loan::create([
+            'member_id' => $validated['member_id'],
+            'user_id' => $validated['user_id'],
+            'tanggal_pinjam' => $validated['tanggal_pinjam'],
+            'tanggal_kembali' => $validated['tanggal_kembali'],
+        ]);
+
+        foreach ($validated['book_ids'] as $bookId) {
+            $loan->loanItems()->create(['book_id' => $bookId]);
+        }
+
+        return redirect()->route('loans.index')
+            ->with('success', 'Transaksi peminjaman berhasil dibuat.');
+    }
+
+    public function show(string $id)
+    {
+        $loan = Loan::with(['member', 'user', 'loanItems.book'])->findOrFail($id);
+
+        return view('loans.show', compact('loan'));
+    }
+
+    public function edit(string $id)
+    {
+        $loan = Loan::with(['member', 'user', 'loanItems.book'])->findOrFail($id);
+
+        return view('loans.edit', compact('loan'));
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $loan = Loan::findOrFail($id);
+
+        $validated = $request->validate([
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'status' => 'required|in:dipinjam,dikembalikan,terlambat',
+        ], [
+            'tanggal_kembali.required' => 'Tanggal kembali wajib diisi.',
+            'tanggal_kembali.after_or_equal' => 'Tanggal kembali tidak boleh sebelum tanggal pinjam.',
+        ]);
+
+        $loan->update($validated);
+
+        return redirect()->route('loans.index')
+            ->with('success', 'Transaksi peminjaman berhasil diperbarui.');
+    }
+
+    public function destroy(string $id)
+    {
+        $loan = Loan::findOrFail($id);
+        $loan->loanItems()->delete();
+        $loan->delete();
+
+        return redirect()->route('loans.index')
+            ->with('success', 'Transaksi peminjaman berhasil dihapus.');
+    }
+
+    public function kembalikan(string $id) 
+    { 
+        return "LoanController@kembalikan, id: {$id}"; 
+    }
 }
