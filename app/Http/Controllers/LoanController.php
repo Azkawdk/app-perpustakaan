@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Loan;
-use App\Models\Member; // <-- Tambahkan ini
-use App\Models\Book;   // <-- Tambahkan ini
-use App\Models\User;   // <-- Tambahkan ini
+use App\Models\Member;
+use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoanController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
         $loans = Loan::with(['member', 'user', 'loanItems.book'])->paginate(10);
@@ -17,20 +20,24 @@ class LoanController extends Controller
         return view('loans.index', compact('loans'));
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         $members = Member::all();
         $books = Book::all();
-        $users = User::all();
 
-        return view('loans.create', compact('members', 'books', 'users'));
+        return view('loans.create', compact('members', 'books'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'member_id' => 'required|integer|exists:members,id',
-            'user_id' => 'required|integer|exists:users,id',
             'tanggal_pinjam' => 'required|date',
             'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
             'book_ids' => 'required|array|min:1',
@@ -39,7 +46,7 @@ class LoanController extends Controller
 
         $loan = Loan::create([
             'member_id' => $validated['member_id'],
-            'user_id' => $validated['user_id'],
+            'user_id' => auth()->id(),
             'tanggal_pinjam' => $validated['tanggal_pinjam'],
             'tanggal_kembali' => $validated['tanggal_kembali'],
         ]);
@@ -52,6 +59,9 @@ class LoanController extends Controller
             ->with('success', 'Transaksi peminjaman berhasil dibuat.');
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show(string $id)
     {
         $loan = Loan::with(['member', 'user', 'loanItems.book'])->findOrFail($id);
@@ -59,6 +69,9 @@ class LoanController extends Controller
         return view('loans.show', compact('loan'));
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit(string $id)
     {
         $loan = Loan::with(['member', 'user', 'loanItems.book'])->findOrFail($id);
@@ -66,16 +79,19 @@ class LoanController extends Controller
         return view('loans.edit', compact('loan'));
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, string $id)
     {
         $loan = Loan::findOrFail($id);
 
         $validated = $request->validate([
-            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'tanggal_kembali' => 'required|date',
             'status' => 'required|in:dipinjam,dikembalikan,terlambat',
         ], [
             'tanggal_kembali.required' => 'Tanggal kembali wajib diisi.',
-            'tanggal_kembali.after_or_equal' => 'Tanggal kembali tidak boleh sebelum tanggal pinjam.',
+            'status.required' => 'Status peminjaman wajib diisi.',
         ]);
 
         $loan->update($validated);
@@ -84,6 +100,9 @@ class LoanController extends Controller
             ->with('success', 'Transaksi peminjaman berhasil diperbarui.');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(string $id)
     {
         $loan = Loan::findOrFail($id);
@@ -94,8 +113,15 @@ class LoanController extends Controller
             ->with('success', 'Transaksi peminjaman berhasil dihapus.');
     }
 
+    /**
+     * Mengubah status peminjaman menjadi dikembalikan.
+     */
     public function kembalikan(string $id) 
     { 
-        return "LoanController@kembalikan, id: {$id}"; 
+        $loan = Loan::findOrFail($id);
+        $loan->update(['status' => 'dikembalikan']);
+
+        return redirect()->route('loans.index')
+            ->with('success', 'Buku berhasil dikembalikan.');
     }
 }
