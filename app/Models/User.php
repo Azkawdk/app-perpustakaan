@@ -28,7 +28,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hash',
+            // 'password' => 'hash', // Hapus atau komentari baris ini
         ];
     }
 
